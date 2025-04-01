@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WhatsApp-like Chat</title>
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <style>
+        body {
+            background-color: #e5ddd5;
+            font-family: Arial, sans-serif;
+        }
+
+        .chat-container {
+            max-width: 600px;
+            margin: 50px auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .profile {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            background-color: #f0f0f0;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .profile-image {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            margin-right: 15px;
+        }
+
+        .profile-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .profile-info strong {
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        #chat-log {
+            height: 400px;
+            overflow-y: auto;
+            padding: 10px;
+            background: #f0f0f0;
+            border-radius: 5px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chat-message {
+            display: flex;
+            margin: 10px 0;
+            align-items: flex-start;
+        }
+
+        .my-message {
+            background: #dcf8c6;
+            color: #333;
+            max-width: 80%;
+            border-radius: 15px;
+            padding: 10px;
+            margin-left: auto;
+            text-align: right;
+            position: relative;
+        }
+
+        .other-message {
+            background: #fff;
+            color: #333;
+            max-width: 80%;
+            border-radius: 15px;
+            padding: 10px;
+            margin-right: auto;
+            text-align: left;
+            position: relative;
+        }
+
+        .user-image {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+
+        .message-header {
+            display: flex;
+            align-items: center;
+        }
+
+        .message-content {
+            font-size: 16px;
+            line-height: 1.4;
+        }
+
+        .chat-message .message-header .user-image {
+            margin-left: 10px;
+        }
+
+        .input-group {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .input-group input {
+            flex-grow: 1;
+            border-radius: 20px;
+            border: none;
+            padding: 10px;
+            margin-right: 10px;
+        }
+
+        .input-group button {
+            background: #128C7E;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            padding: 10px;
+            cursor: pointer;
+        }
+
+        .input-group button:hover {
+            background: #075E54;
+        }
+
+        .chat-message .message-content:before {
+            content: "";
+            position: absolute;
+            top: 50%;
+            width: 0;
+            height: 0;
+            border-left: 10px solid transparent;
+            border-right: 10px solid transparent;
+            border-top: 10px solid #dcf8c6;
+            transform: translateY(-50%);
+            right: -10px;
+        }
+
+        .other-message .message-content:before {
+            content: "";
+            position: absolute;
+            top: 50%;
+            width: 0;
+            height: 0;
+            border-left: 10px solid transparent;
+            border-right: 10px solid transparent;
+            border-bottom: 10px solid #fff;
+            transform: translateY(-50%);
+            left: -10px;
+        }
+    </style>    
+</head>
+<body>
+
+<div class="container">
+    <div class="chat-container">
+        <!-- Profile Section - Static -->
+        <div class="profile" id="profile-section">
+            <img id="profile-image" class="profile-image" src="" alt="Profile Image">
+            <div class="profile-info">
+                <strong id="username">Your Name Here</strong> <!-- Replace with your name -->
+            </div>
+        </div>
+
+        <h2 class="text-center">Chat Room</h2>
+
+        <!-- Chat Log -->
+        <div id="chat-log" class="mb-3">
+            <!-- Messages will be dynamically added here -->
+        </div>
+
+        <!-- Input Section -->
+        <div class="input-group">
+            <input id="message-input" type="text" class="form-control" placeholder="Type a message...">
+            <button class="btn" onclick="sendMessage()">➤</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Prompt user for their name and profile image
+    const username = prompt("Enter your username:").trim();
+    const profileImage = prompt("Enter the URL for your profile image:").trim();
+
+    // Set the profile name and image dynamically only once
+    document.getElementById("username").innerText = username || "Your Name Here";
+    document.getElementById("profile-image").src = profileImage || "https://www.w3schools.com/w3images/avatar2.png";
+
+    const chatSocket = new WebSocket(
+        "ws://" + window.location.host + "/ws/chat/room1/"
+    );
+
+    chatSocket.onmessage = function(event) {
+        const data = JSON.parse(event.data);
+        const chatLog = document.getElementById("chat-log");
+
+        const messageElement = document.createElement("div");
+        messageElement.classList.add("chat-message");
+
+        // Add class for the sender's message
+        if (data.username === username) {
+            messageElement.classList.add("my-message");
+        } else {
+            messageElement.classList.add("other-message");
+        }
+
+        const messageContent = document.createElement("div");
+        messageContent.classList.add("message-content");
+
+        // Add only message content, no username attached
+        messageContent.innerText = data.message;
+
+        messageElement.appendChild(messageContent);
+
+        // Add profile image for the other user's messages (only for the receiver)
+        if (data.username !== username) {
+            const messageHeader = document.createElement("div");
+            messageHeader.classList.add("message-header");
+
+            const userImage = document.createElement("img");
+            userImage.src = data.user_image || "https://www.w3schools.com/w3images/avatar2.png";
+            userImage.alt = "User Image";
+            userImage.classList.add("user-image");
+
+            messageHeader.appendChild(userImage);
+            messageElement.appendChild(messageHeader);
+        }
+
+        chatLog.appendChild(messageElement);
+        chatLog.scrollTop = chatLog.scrollHeight;
+    };
+
+    chatSocket.onclose = function(event) {
+        console.error("WebSocket closed unexpectedly");
+    };
+
+    function sendMessage() {
+        const messageInput = document.getElementById("message-input");
+        const message = messageInput.value.trim();
+
+        if (message !== "") {
+            chatSocket.send(JSON.stringify({
+                "username": username,
+                "message": message,
+                "user_image": profileImage
+            }));
+            messageInput.value = "";
+        }
+    }
+
+    document.getElementById("message-input").addEventListener("keydown", function(event) {
+        if (event.key === "Enter") {
+            event.preventDefault();
+            sendMessage();
+        }
+    });
+</script>
+
+</body>
+</html>
