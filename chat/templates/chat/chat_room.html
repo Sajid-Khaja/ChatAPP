@@ -3,17 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WhatsApp-like Chat</title>
+    <title>Chat Room</title>
 
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 
     <style>
-        body {
-            background-color: #e5ddd5;
-            font-family: Arial, sans-serif;
-        }
-
+        /* Custom styling for the chat */
         .chat-container {
             max-width: 600px;
             margin: 50px auto;
@@ -22,229 +18,164 @@
             border-radius: 10px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
-
-        .profile {
-            display: flex;
-            align-items: center;
-            padding: 10px;
-            background-color: #f0f0f0;
-            border-radius: 8px;
-            margin-bottom: 20px;
-        }
-
-        .profile-image {
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            margin-right: 15px;
-        }
-
-        .profile-info {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .profile-info strong {
-            font-size: 18px;
-            font-weight: bold;
-        }
-
+        
         #chat-log {
-            height: 400px;
+            height: 300px;
             overflow-y: auto;
             padding: 10px;
             background: #f0f0f0;
             border-radius: 5px;
             display: flex;
-            flex-direction: column;
+            flex-direction: column;  /* Ensures messages stack vertically */
+            margin-bottom: 20px;
         }
-
+        
         .chat-message {
             display: flex;
+            flex-direction: row;
+            align-items: center;
             margin: 10px 0;
-            align-items: flex-start;
         }
-
+        
+        /* Styling for messages sent by the current user */
         .my-message {
             background: #dcf8c6;
             color: #333;
-            max-width: 80%;
-            border-radius: 15px;
-            padding: 10px;
-            margin-left: auto;
             text-align: right;
+            padding: 8px;
+            max-width: 70%;
+            margin-left: auto;  /* Aligns the message to the right */
+            border-radius: 10px;
             position: relative;
         }
-
+        
+        /* Styling for messages sent by others */
         .other-message {
             background: #fff;
-            color: #333;
-            max-width: 80%;
-            border-radius: 15px;
-            padding: 10px;
-            margin-right: auto;
+            border: 1px solid #ddd;
             text-align: left;
+            padding: 8px;
+            max-width: 70%;
+            margin-right: auto;  /* Aligns the message to the left */
+            border-radius: 10px;
             position: relative;
         }
-
+        
         .user-image {
             width: 40px;
             height: 40px;
             border-radius: 50%;
             margin-right: 10px;
         }
-
+        
         .message-header {
             display: flex;
             align-items: center;
+            margin-bottom: 5px;
         }
-
+        
         .message-content {
-            font-size: 16px;
-            line-height: 1.4;
-        }
-
-        .chat-message .message-header .user-image {
-            margin-left: 10px;
-        }
-
-        .input-group {
             display: flex;
-            justify-content: space-between;
+            justify-content: flex-start;
+            flex-direction: column;
+            max-width: 80%;
         }
-
-        .input-group input {
-            flex-grow: 1;
-            border-radius: 20px;
-            border: none;
-            padding: 10px;
-            margin-right: 10px;
+        
+        /* Typing indicator */
+        #typing-indicator {
+            font-style: italic;
+            color: #999;
+            text-align: center;
+            margin-bottom: 10px;
         }
-
-        .input-group button {
-            background: #128C7E;
-            color: white;
-            border: none;
-            border-radius: 50%;
-            padding: 10px;
-            cursor: pointer;
-        }
-
-        .input-group button:hover {
-            background: #075E54;
-        }
-
-        .chat-message .message-content:before {
-            content: "";
-            position: absolute;
-            top: 50%;
-            width: 0;
-            height: 0;
-            border-left: 10px solid transparent;
-            border-right: 10px solid transparent;
-            border-top: 10px solid #dcf8c6;
-            transform: translateY(-50%);
-            right: -10px;
-        }
-
-        .other-message .message-content:before {
-            content: "";
-            position: absolute;
-            top: 50%;
-            width: 0;
-            height: 0;
-            border-left: 10px solid transparent;
-            border-right: 10px solid transparent;
-            border-bottom: 10px solid #fff;
-            transform: translateY(-50%);
-            left: -10px;
-        }
-    </style>    
+    </style>
 </head>
 <body>
 
 <div class="container">
     <div class="chat-container">
-        <!-- Profile Section - Static -->
-        <div class="profile" id="profile-section">
-            <img id="profile-image" class="profile-image" src="" alt="Profile Image">
-            <div class="profile-info">
-                <strong id="username">Your Name Here</strong> <!-- Replace with your name -->
-            </div>
-        </div>
-
-        <h2 class="text-center">Chat Room</h2>
+        <h2 class="text-center">Chat Room: <span id="room-name"></span> - Welcome, <span id="user-name"></span></h2>
 
         <!-- Chat Log -->
         <div id="chat-log" class="mb-3">
-            <!-- Messages will be dynamically added here -->
+            <!-- Messages will be displayed here -->
         </div>
 
-        <!-- Input Section -->
+        <!-- Typing Indicator -->
+        <div id="typing-indicator"></div>
+
+        <!-- Message Input -->
         <div class="input-group">
             <input id="message-input" type="text" class="form-control" placeholder="Type a message...">
-            <button class="btn" onclick="sendMessage()">➤</button>
+            <button class="btn btn-success" onclick="sendMessage()">➤</button>
         </div>
     </div>
 </div>
 
 <script>
-    // Prompt user for their name and profile image
+    const roomName = window.location.pathname.split("/").slice(-2, -1)[0];
+    document.getElementById("room-name").innerText = roomName;
+
     const username = prompt("Enter your username:").trim();
-    const profileImage = prompt("Enter the URL for your profile image:").trim();
+    document.getElementById("user-name").innerText = username;
 
-    // Set the profile name and image dynamically only once
-    document.getElementById("username").innerText = username || "Your Name Here";
-    document.getElementById("profile-image").src = profileImage || "https://www.w3schools.com/w3images/avatar2.png";
+    let typingTimeout;
+    let typingDelay = 3000; // 3 seconds delay before hiding the typing indicator
 
+    // WebSocket connection
     const chatSocket = new WebSocket(
-        "ws://" + window.location.host + "/ws/chat/room1/"
+        "ws://" + window.location.host + "/ws/chat/" + roomName + "/"
     );
 
+    // Handle messages from WebSocket
     chatSocket.onmessage = function(event) {
         const data = JSON.parse(event.data);
-        const chatLog = document.getElementById("chat-log");
 
-        const messageElement = document.createElement("div");
-        messageElement.classList.add("chat-message");
+        if (data.action === "typing") {
+            // Show typing indicator only if the current user is NOT the one typing
+            if (data.username !== username) {
+                document.getElementById("typing-indicator").innerText = `${data.username} is typing...`;
+            }
 
-        // Add class for the sender's message
-        if (data.username === username) {
-            messageElement.classList.add("my-message");
+            // Reset timeout to hide typing indicator after delay
+            clearTimeout(typingTimeout);
+            typingTimeout = setTimeout(function() {
+                document.getElementById("typing-indicator").innerText = "";
+            }, typingDelay);
         } else {
-            messageElement.classList.add("other-message");
+            // Handle new message
+            const chatLog = document.getElementById("chat-log");
+
+            const messageElement = document.createElement("div");
+            messageElement.classList.add("chat-message");
+
+            const messageContent = document.createElement("div");
+            messageContent.classList.add("message-content");
+
+            // If the message is from the logged-in user (me), apply the 'my-message' class
+            if (data.username === username) {
+                messageContent.classList.add("my-message");
+            } else {
+                messageContent.classList.add("other-message");
+            }
+
+            // Create message content
+            messageContent.innerText = data.message;
+
+            // Append message to chat log
+            messageElement.appendChild(messageContent);
+            chatLog.appendChild(messageElement);
+
+            // Auto-scroll to the latest message
+            chatLog.scrollTop = chatLog.scrollHeight;
         }
-
-        const messageContent = document.createElement("div");
-        messageContent.classList.add("message-content");
-
-        // Add only message content, no username attached
-        messageContent.innerText = data.message;
-
-        messageElement.appendChild(messageContent);
-
-        // Add profile image for the other user's messages (only for the receiver)
-        if (data.username !== username) {
-            const messageHeader = document.createElement("div");
-            messageHeader.classList.add("message-header");
-
-            const userImage = document.createElement("img");
-            userImage.src = data.user_image || "https://www.w3schools.com/w3images/avatar2.png";
-            userImage.alt = "User Image";
-            userImage.classList.add("user-image");
-
-            messageHeader.appendChild(userImage);
-            messageElement.appendChild(messageHeader);
-        }
-
-        chatLog.appendChild(messageElement);
-        chatLog.scrollTop = chatLog.scrollHeight;
     };
 
     chatSocket.onclose = function(event) {
         console.error("WebSocket closed unexpectedly");
     };
 
+    // Send message to WebSocket
     function sendMessage() {
         const messageInput = document.getElementById("message-input");
         const message = messageInput.value.trim();
@@ -252,8 +183,7 @@
         if (message !== "") {
             chatSocket.send(JSON.stringify({
                 "username": username,
-                "message": message,
-                "user_image": profileImage
+                "message": message
             }));
             messageInput.value = "";
         }
@@ -264,6 +194,20 @@
             event.preventDefault();
             sendMessage();
         }
+    
+        // Notify others that the user is typing, but don't show it for the sender
+        if (event.target.value.trim() !== "") {
+            chatSocket.send(JSON.stringify({
+                "username": username,
+                "action": "typing"
+            }));
+        }
+    
+        // Reset the typing timeout each time a key is pressed
+        clearTimeout(typingTimeout);
+        typingTimeout = setTimeout(function() {
+            document.getElementById("typing-indicator").innerText = "";
+        }, typingDelay);
     });
 </script>
 
